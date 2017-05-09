@@ -1,0 +1,9 @@
+C:\Users\Migle\Documents\TOP\MyFirstProject\RIP\RIP\bin\Debug\RIP.exe.config
+C:\Users\Migle\Documents\TOP\MyFirstProject\RIP\RIP\bin\Debug\RIP.exe
+C:\Users\Migle\Documents\TOP\MyFirstProject\RIP\RIP\bin\Debug\RIP.pdb
+C:\Users\Migle\Documents\TOP\MyFirstProject\RIP\RIP\obj\Debug\RIP.csprojResolveAssemblyReference.cache
+C:\Users\Migle\Documents\TOP\MyFirstProject\RIP\RIP\obj\Debug\RIP.Form1.resources
+C:\Users\Migle\Documents\TOP\MyFirstProject\RIP\RIP\obj\Debug\RIP.Properties.Resources.resources
+C:\Users\Migle\Documents\TOP\MyFirstProject\RIP\RIP\obj\Debug\RIP.csproj.GenerateResource.Cache
+C:\Users\Migle\Documents\TOP\MyFirstProject\RIP\RIP\obj\Debug\RIP.exe
+C:\Users\Migle\Documents\TOP\MyFirstProject\RIP\RIP\obj\Debug\RIP.pdb
