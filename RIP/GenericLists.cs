@@ -8,21 +8,26 @@ namespace RIP
 {
     class GenericLists<T>
     {
-        List<T> list = new List<T>();
+        private List<T> _list = new List<T>();
 
         public void Add(T p)
         {
-            list.Add(p);
+            _list.Add(p);
         }
 
         public void Delete(T p)
         {
-            list.Remove(p);
+            _list.Remove(p);
         }
 
         public List<T> Get()
         {
-            return list;
+            return _list;
+        }
+
+        public void Set(List<T> list)
+        {
+            _list = list;
         }
     }
 }

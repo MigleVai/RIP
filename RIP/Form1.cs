@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -72,7 +73,7 @@ namespace RIP
             _allLines.Add(line);
             var x = Math.Max(_first.XCord, _second.XCord);
             var y = Math.Max(_first.YCord, _second.YCord);
-            graph.DrawString(line.Value.ToString(), new Font("Times New Roman", 13), Brushes.Black, new PointF((_first.XCord + _second.XCord)/2, (_first.YCord + _second.YCord)/2));
+            graph.DrawString(line.Value.ToString(), new Font("Times New Roman", 13), Brushes.Black, new PointF((_first.XCord + _second.XCord) / 2, (_first.YCord + _second.YCord) / 2));
             graph.DrawLine(new Pen(Color.Black), _first.XCord, _first.YCord, _second.XCord, _second.YCord);
         }
 
@@ -86,90 +87,170 @@ namespace RIP
             return null;
         }
 
-        public int BellmanFord(char source, char dest)
+        public void AddNeighbour(char source)
         {
-            int verticesCount = _allPoints.Get().Count;
-            int edgesCount = _allLines.Get().Count;
-            int[] distance = new int[verticesCount];
-            int[] distanceOther = new int[verticesCount];
-            char[] names = new char[verticesCount];
-
-            for (int i = 0; i < verticesCount; i++)
+            var temp = _allPoints.Get();
+            var tempLines = _allLines.Get();
+            var tempDic = new Dictionary<Point, int>();
+            //if (temp.Find(o => o.Name == source).Neighbors.Count == 0)
+            //{
+            foreach (var item in tempLines)
             {
-                names[i] = _allPoints.Get().ElementAt(i).Name;
-                distance[i] = int.MaxValue;
-                distanceOther[i] = int.MaxValue;
+                if (item.FirstName == source)
+                    tempDic.Add(item.Second, item.Value);
+
+                if (item.SecondName == source)
+                    tempDic.Add(item.First, item.Value);
             }
-
-            var sourceNumber = Array.IndexOf(names, source);
-            distance[sourceNumber] = 0;
-            distanceOther[sourceNumber] = 0;
-
-
-            for (int i = 1; i <= verticesCount - 1; ++i)//points
-            {
-                for (int j = 0; j < edgesCount; ++j)//lines
-                {
-                    var tempF = _allLines.Get().ElementAt(j).FirstName;
-                    int u = Array.IndexOf(names, tempF);// first 
-                    var tempS = _allLines.Get().ElementAt(j).SecondName;
-                    int v = Array.IndexOf(names, tempS); //second
-                    int weight = _allLines.Get().ElementAt(j).Value;
-
-                    if (distance[u] != int.MaxValue && distance[u] + weight < distance[v])
-                        distance[v] = distance[u] + weight;
-                }
-
-                for (int z = 0; z < edgesCount; ++z)//lines
-                {
-                    var tempS = _allLines.Get().ElementAt(z).SecondName;
-                    int u = Array.IndexOf(names, tempS);// second
-                    var tempF = _allLines.Get().ElementAt(z).FirstName;
-                    int v = Array.IndexOf(names, tempF); //first
-                    int weight = _allLines.Get().ElementAt(z).Value;
-
-                    if (distanceOther[u] != int.MaxValue && distanceOther[u] + weight < distanceOther[v])
-                        distanceOther[v] = distanceOther[u] + weight;
-                }
-            }
-
-            for (int i = 0; i < edgesCount; ++i)
-            {
-                var tempF = _allLines.Get().ElementAt(i).FirstName;
-                int u = Array.IndexOf(names, tempF);// first 
-                var tempS = _allLines.Get().ElementAt(i).SecondName;
-                int v = Array.IndexOf(names, tempS); //second
-                int weight = _allLines.Get().ElementAt(i).Value;
-
-                if (distance[u] != int.MaxValue && distance[u] + weight < distance[v])
-                    return 404;
-            }
-
-            for (int i = 0; i < edgesCount; ++i)
-            {
-                var tempS = _allLines.Get().ElementAt(i).SecondName;
-                int u = Array.IndexOf(names, tempS); //second
-                var tempF = _allLines.Get().ElementAt(i).FirstName;
-                int v = Array.IndexOf(names, tempF);// first 
-
-                int weight = _allLines.Get().ElementAt(i).Value;
-
-                if (distanceOther[u] != int.MaxValue && distanceOther[u] + weight < distanceOther[v])
-                    return 404;
-            }
-
-            var temp = Array.IndexOf(names, dest);
-            if (distance[temp] == Int32.MaxValue)
-                return distanceOther[temp];
-            return distance[temp];
+            temp.Find(o => o.Name == source).Neighbors = tempDic;
+            _allPoints.Set(temp);
+            //}
         }
+
+        /*
+         foreach (Point item in tempPoint)
+                {
+                    foreach (var last in item.Neighbors.Keys)
+                    {
+                        while (first != last)
+                        {
+                            path += first.Name;
+                            first = first.Hops.Find(o => o.Destination == last).HopStep;
+                        }
+                        path += first;
+                    }
+                }
+        */
+
+        public void BellmanFord(char source)
+        {
+            var tempPoint = _allPoints.Get();
+            var tempLine = _allLines.Get();
+            var point = tempPoint.Find(o => o.Name == source);
+            //string path = string.Empty;
+            //Point first = point;
+            int free;
+
+
+            foreach (var item in point.Neighbors)
+            {
+                point.Hops.Add(new Hop(item.Key, item.Value, item.Key));
+            }
+
+            for (int i = 1; i < tempPoint.Count - 2; i++)
+            {
+                foreach (var item in tempPoint)
+                {
+                    if (item.Hops.Exists(o => o.Destination.Name == source))
+                    {
+                        free = item.Hops.Find(o => o.Destination.Name == source).Value;
+                        foreach (var pItem in item.Hops)
+                        {
+                            var temp = point.Hops.Find(o => o.Destination == pItem.Destination);
+                            if (temp != null)
+                            {
+                                if (free + pItem.Value < temp.Value)
+                                {
+                                    var index = tempPoint.IndexOf(point);
+                                    point.Hops.Find(o => o.Destination == pItem.Destination).Value = free + pItem.Value;
+                                    tempPoint[index] = point;
+                                    _allPoints.Set(tempPoint);
+                                }
+                            }
+                            else
+                            {
+                                point.Hops.Add(pItem);
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+        //public int BellmanFord(char source, char dest)
+        //{
+        //    int verticesCount = _allPoints.Get().Count;
+        //    int edgesCount = _allLines.Get().Count;
+        //    int[] distance = new int[verticesCount];
+        //    int[] distanceOther = new int[verticesCount];
+        //    char[] names = new char[verticesCount];
+
+        //    for (int i = 0; i < verticesCount; i++)
+        //    {
+        //        names[i] = _allPoints.Get().ElementAt(i).Name;
+        //        distance[i] = int.MaxValue;
+        //        distanceOther[i] = int.MaxValue;
+        //    }
+
+        //    var sourceNumber = Array.IndexOf(names, source);
+        //    distance[sourceNumber] = 0;
+        //    distanceOther[sourceNumber] = 0;
+
+
+        //    for (int i = 1; i <= verticesCount - 1; ++i)//points
+        //    {
+        //        for (int j = 0; j < edgesCount; ++j)//lines
+        //        {
+        //            var tempF = _allLines.Get().ElementAt(j).FirstName;
+        //            int u = Array.IndexOf(names, tempF);// first 
+        //            var tempS = _allLines.Get().ElementAt(j).SecondName;
+        //            int v = Array.IndexOf(names, tempS); //second
+        //            int weight = _allLines.Get().ElementAt(j).Value;
+
+        //            if (distance[u] != int.MaxValue && distance[u] + weight < distance[v])
+        //                distance[v] = distance[u] + weight;
+        //        }
+
+        //        for (int z = 0; z < edgesCount; ++z)//lines
+        //        {
+        //            var tempS = _allLines.Get().ElementAt(z).SecondName;
+        //            int u = Array.IndexOf(names, tempS);// second
+        //            var tempF = _allLines.Get().ElementAt(z).FirstName;
+        //            int v = Array.IndexOf(names, tempF); //first
+        //            int weight = _allLines.Get().ElementAt(z).Value;
+
+        //            if (distanceOther[u] != int.MaxValue && distanceOther[u] + weight < distanceOther[v])
+        //                distanceOther[v] = distanceOther[u] + weight;
+        //        }
+        //    }
+
+        //    for (int i = 0; i < edgesCount; ++i)
+        //    {
+        //        var tempF = _allLines.Get().ElementAt(i).FirstName;
+        //        int u = Array.IndexOf(names, tempF);// first 
+        //        var tempS = _allLines.Get().ElementAt(i).SecondName;
+        //        int v = Array.IndexOf(names, tempS); //second
+        //        int weight = _allLines.Get().ElementAt(i).Value;
+
+        //        if (distance[u] != int.MaxValue && distance[u] + weight < distance[v])
+        //            return 404;
+        //    }
+
+        //    for (int i = 0; i < edgesCount; ++i)
+        //    {
+        //        var tempS = _allLines.Get().ElementAt(i).SecondName;
+        //        int u = Array.IndexOf(names, tempS); //second
+        //        var tempF = _allLines.Get().ElementAt(i).FirstName;
+        //        int v = Array.IndexOf(names, tempF);// first 
+
+        //        int weight = _allLines.Get().ElementAt(i).Value;
+
+        //        if (distanceOther[u] != int.MaxValue && distanceOther[u] + weight < distanceOther[v])
+        //            return 404;
+        //    }
+
+        //    var temp = Array.IndexOf(names, dest);
+        //    if (distance[temp] == Int32.MaxValue)
+        //        return distanceOther[temp];
+        //    return distance[temp];
+        //}
 
         private void button2_Click(object sender, EventArgs e)
         {
-            var source = Convert.ToChar(textBox1.Text);
-            var dest = Convert.ToChar(textBox2.Text);
-            var result = BellmanFord(source, dest);
-            label2.Text = result.ToString();
+            //var source = Convert.ToChar(textBox1.Text);
+            //var dest = Convert.ToChar(textBox2.Text);
+            //var result = BellmanFord(source, dest);
+            //label2.Text = result.ToString();
         }
     }
 }
