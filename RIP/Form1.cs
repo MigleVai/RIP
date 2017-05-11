@@ -58,6 +58,18 @@ namespace RIP
             graph.DrawImage(bmpDrawingArea, 0, 0);
         }
 
+        public void DrawPoint(int x, int y, char name)
+        {
+            var radius = 15;
+            int start = x - radius;
+            int end = y - radius;
+            int diam = radius * 2;
+            bmpDrawingArea = new Bitmap(Width, Height);
+            graphDrawingArea = Graphics.FromImage(bmpDrawingArea);
+            graphDrawingArea.DrawEllipse(new Pen(Color.Black), start, end, diam, diam);
+            graphDrawingArea.DrawString(name.ToString(), new Font("Times New Roman", 13), Brushes.Black, new PointF(x - 8, y - 10));
+        }
+
         void DrawCentralCircle(int CenterX, int CenterY, int Radius)
         {
             if (_asciiNumber >= 91) // Z => 90
@@ -66,14 +78,7 @@ namespace RIP
             var p = new Point(CenterX, CenterY);
             p.Name = Convert.ToChar(_asciiNumber);
             _allPoints.Add(p);
-
-            int start = CenterX - Radius;
-            int end = CenterY - Radius;
-            int diam = Radius * 2;
-            bmpDrawingArea = new Bitmap(Width, Height);
-            graphDrawingArea = Graphics.FromImage(bmpDrawingArea);
-            graphDrawingArea.DrawEllipse(new Pen(Color.Black), start, end, diam, diam);
-            graphDrawingArea.DrawString(p.Name.ToString(), new Font("Times New Roman", 13), Brushes.Black, new PointF(CenterX - 8, CenterY - 10));
+            DrawPoint(CenterX, CenterY, p.Name);
             _asciiNumber++;
         }
 
@@ -92,12 +97,15 @@ namespace RIP
             var line = new Lines(_first, _second, _first.Name, _second.Name);
             line.Value = Convert.ToInt32(textBox3.Text);
             _allLines.Add(line);
-            var x = Math.Max(_first.XCord, _second.XCord);
-            var y = Math.Max(_first.YCord, _second.YCord);
-            graph.DrawString(line.Value.ToString(), new Font("Times New Roman", 13), Brushes.Black, new PointF((_first.XCord + _second.XCord) / 2, (_first.YCord + _second.YCord) / 2));
-            graph.DrawLine(new Pen(Color.Black), _first.XCord, _first.YCord, _second.XCord, _second.YCord);
+            DrawLines(line, _first, _second);
             AddNeighbour(_first.Name);
             AddNeighbour(_second.Name);
+        }
+
+        public void DrawLines(Lines line, Point _first, Point _second)
+        {
+            graph.DrawString(line.Value.ToString(), new Font("Times New Roman", 13), Brushes.Black, new PointF((_first.XCord + _second.XCord) / 2, (_first.YCord + _second.YCord) / 2));
+            graph.DrawLine(new Pen(Color.Black), _first.XCord, _first.YCord, _second.XCord, _second.YCord);
         }
 
         public Point Coordinates(char c)
@@ -117,8 +125,7 @@ namespace RIP
             var point = _allPoints.Get().Find(o => o.Name == source);
             List<Hop> tempP = point.Hops;
             var tempDic = new Dictionary<Point, int>();
-            //if (temp.Find(o => o.Name == source).Neighbors.Count == 0)
-            //{
+
             foreach (var item in tempLines)
             {
                 if (item.FirstName == source)
@@ -139,8 +146,6 @@ namespace RIP
             }
             else
             {
-                //foreach (var p in point.Hops)
-                //{
                 var tempHop = point.Neighbors.Where(o => !point.Hops.Any(p => o.Key == p.Destination && o.Value == p.Value));
                 if (tempHop != null)
                 {
@@ -149,59 +154,80 @@ namespace RIP
                         tempP.Add(new Hop(item.Key, item.Value, item.Key));
                     }
                 }
-                //}
             }
 
             temp.Find(o => o.Name == source).Hops = tempP;
             _allPoints.Set(temp);
-            //}
         }
 
         public void BellmanFord(char source)
         {
             var tempPoint = _allPoints.Get();
-            var tempLine = _allLines.Get();
             var point = tempPoint.Find(o => o.Name == source);
-            //string path = string.Empty;
-            //Point first = point;
             int free;
 
             for (int i = 1; i < tempPoint.Count - 1; i++)
             {
-                //else
+                //var test = point.Hops.Find(o => o.Value == Int32.MaxValue);
+                //if (test != null)
                 //{
+                //    foreach (var item in tempPoint)
+                //    {
+                //        var tempTest = item.Hops.Find(o => o.Value == Int32.MaxValue);
+                //        item.Hops.Remove(tempTest);
+                //        if (item.Neighbors.ContainsKey(tempTest.Destination))
+                //            item.Neighbors.Remove(tempTest.Destination);
+                //    }
+                //}
+
                 foreach (var item in tempPoint)
                 {
+                    var test = point.Hops.Find(o => o.Value == Int32.MaxValue);
+                    if (test != null)
+                    {
+                        var tempTest = item.Hops.Find(o => o.Value == Int32.MaxValue);
+                        if (tempTest != null)
+                        {
+                            item.Neighbors.Remove(tempTest.Destination);
+                            foreach (var itemP in point.Hops)
+                            {
+                                if (itemP.Destination == tempTest.Destination || itemP.HopStep == tempTest.Destination)
+                                    itemP.Value = Int32.MaxValue;
+                            }
+                        }
+                        item.Hops.Remove(tempTest);
+                    }
+
                     if (item.Hops.Exists(o => o.Destination.Name == source))
                     {
                         free = item.Hops.Find(o => o.Destination.Name == source).Value;
-                        foreach (var pItem in item.Hops)
+                        if (point.Neighbors.Any(o => o.Key == item))
                         {
-                            if (pItem.Destination.Name != source)
+                            foreach (var pItem in item.Hops)
                             {
-                                var temp = point.Hops.Find(o => o.Destination == pItem.Destination);
-                                if (temp != null)
+                                if (pItem.Destination.Name != source)
                                 {
-                                    if (free + pItem.Value < temp.Value)
+                                    var temp = point.Hops.Find(o => o.Destination == pItem.Destination);
+                                    if (temp != null)
                                     {
-                                        //var index = tempPoint.IndexOf(point);
-                                        point.Hops.Find(o => o.Destination == pItem.Destination).Value = free + pItem.Value;
-                                        _tempPoints.Add(point);
-                                        //_allPoints.Set(tempPoint);
+                                        if (free + pItem.Value < temp.Value)
+                                        {
+                                            var tempP = point.Hops.Find(o => o.Destination == pItem.Destination);//.Value = free + pItem.Value;
+                                            var index = point.Hops.IndexOf(tempP);
+                                            point.Hops[index] = new Hop(pItem.Destination, free + pItem.Value, item);
+                                            _tempPoints.Add(point);
+                                        }
                                     }
-                                }
-                                else
-                                {
-                                    //var index = tempPoint.IndexOf(point);
-                                    point.Hops.Add(new Hop(pItem.Destination, free + pItem.Value, item));
-                                    _tempPoints.Add(point);
-                                    //_allPoints.Set(tempPoint);
+                                    else
+                                    {
+                                        point.Hops.Add(new Hop(pItem.Destination, free + pItem.Value, item)); //item
+                                        _tempPoints.Add(point);
+                                    }
                                 }
                             }
                         }
                     }
                 }
-                //}
             }
 
         }
@@ -215,23 +241,78 @@ namespace RIP
             Point first = tempPoint.Find(o => o.Name == fChar);
             Point last = tempPoint.Find(o => o.Name == sChar);
             string path = string.Empty;
+            var sum = 0;
 
-            foreach (Point item in tempPoint)
+            if (!_allPoints.Get().Exists(o => o == last) || !_allPoints.Get().Exists(o => o == first))
             {
-                //foreach (var last in item.Neighbors.Keys)
-                //{
-                while (first != last)
-                {
-                    path += first.Name;
-                    first = first.Hops.Find(o => o.Destination == last).HopStep;
-                }
-                path += first;
-                if (last.Name == sChar)
-                    break;
-                // }
+                MessageBox.Show("Point does not exist!", "Warning", MessageBoxButtons.OK);
+                return;
             }
 
+            if (!first.Hops.Any(o => o.Destination == last))
+            {
+                MessageBox.Show(first.Name + " does not know of " + last.Name, "Warning", MessageBoxButtons.OK);
+                path = "Undefined";
+            }
+            else
+            {
+                foreach (Point item in tempPoint)
+                {
+                    sum = first.Hops.Find(o => o.Destination == last).Value;
+                    while (first != last)
+                    {
+                        path += first.Name;
+                        var temp = first.Hops.Find(o => o.Destination == last);
+                        first = temp.HopStep;
+                    }
+                    path += first;
+                    if (last.Name == sChar)
+                        break;
+                }
+                path += (" " + sum);
+            }
             label2.Text = path;
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            var name = Convert.ToChar(textBox4.Text);
+            var listP = _allPoints.Get();
+            var listL = new List<Lines>();
+            listL.AddRange(_allLines.Get());
+            var temp = listP.Find(o => o.Name == name);
+
+            foreach (var item in temp.Neighbors)
+            {
+                var neighbour = _allPoints.Get().Find(o => o == item.Key);
+                neighbour.Hops.Find(o => o.Destination.Name == name && o.HopStep.Name == name).Value = Int32.MaxValue;
+            }
+
+            foreach (var item in _allLines.Get())
+            {
+                if (item.FirstName == name)
+                    listL.Remove(item);
+
+                if (item.SecondName == name)
+                    listL.Remove(item);
+            }
+            _allLines.Set(listL);
+            _allPoints.Delete(temp);
+
+            _allPoints.Get();
+            graph.Clear(Color.WhiteSmoke);
+            this.Refresh();
+
+            foreach (var item in _allPoints.Get())
+            {
+                DrawPoint(item.XCord, item.YCord, item.Name);
+                graph.DrawImage(bmpDrawingArea, 0, 0);
+            }
+            foreach (var item in _allLines.Get())
+            {
+                DrawLines(item, item.First, item.Second);
+                graph.DrawImage(bmpDrawingArea, 0, 0);
+            }
         }
     }
 }
