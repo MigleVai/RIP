@@ -28,18 +28,26 @@ namespace RIP
         {
             timer1 = new Timer();
             timer1.Tick += new EventHandler(timer1_Tick);
-            timer1.Interval = 60000; // in miliseconds
+            timer1.Interval = 1500; // in miliseconds
+            progressBar1.Maximum = 100;
             timer1.Start();
         }
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            label3.Text = "TICK!";
-            foreach (var item in _allPoints.Get())
+            if (progressBar1.Value < 100)
             {
-                BellmanFord(item.Name);
+                progressBar1.Value += 5;
             }
-            _allPoints.Get().Union(_tempPoints);
+            else
+            {
+                foreach (var item in _allPoints.Get())
+                {
+                    BellmanFord(item.Name);
+                }
+                _allPoints.Get().Union(_tempPoints);
+                progressBar1.Value = 0;
+            }
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -47,6 +55,7 @@ namespace RIP
             bmpDrawingArea = new Bitmap(Width, Height);
             graphDrawingArea = Graphics.FromImage(bmpDrawingArea);
             graph = Graphics.FromHwnd(Handle);
+            label2.Text = "None";
             InitTimer();
         }
 
@@ -168,27 +177,27 @@ namespace RIP
             var tempHops = point.Hops;
 
             var test = point.Hops.Find(o => o.Value == Int32.MaxValue);
-            var listHops = point.Hops; // item
+            var listHops = point.Hops; 
 
             if (test != null)
             {
-                var tempTest = point.Hops.Find(o => o.Value == Int32.MaxValue); // item
+                var tempTest = point.Hops.Find(o => o.Value == Int32.MaxValue);
                 if (tempTest != null)
                 {
-                    foreach (var itemP in point.Neighbors) // item
+                    foreach (var itemP in point.Neighbors)
                     {
                         if (itemP.Key != tempTest.Destination && itemP.Key.Hops.Exists(o => o.Destination == tempTest.Destination || o.HopStep == tempTest.HopStep))
                         {
                             itemP.Key.Hops.Find(o => o.Destination == tempTest.Destination || o.HopStep == tempTest.HopStep).Value = Int32.MaxValue;
                         }
                     }
-                    point.Neighbors[tempTest.Destination] = Int32.MaxValue;//item
+                    point.Neighbors[tempTest.Destination] = Int32.MaxValue;
                     foreach (var itemH in listHops)
                     {
                         if (itemH.Destination == tempTest.Destination || itemH.HopStep == tempTest.Destination)
                         {
-                            var index = point.Hops.IndexOf(itemH); // item
-                            point.Hops[index].Value = Int32.MaxValue;// item
+                            var index = point.Hops.IndexOf(itemH);
+                            point.Hops[index].Value = Int32.MaxValue;
                         }
                     }
                 }
@@ -224,7 +233,7 @@ namespace RIP
                                         {
                                             if (free + pItem.Value < temp.Value)
                                             {
-                                                var tempP = point.Hops.Find(o => o.Destination == pItem.Destination);//.Value = free + pItem.Value;
+                                                var tempP = point.Hops.Find(o => o.Destination == pItem.Destination);
                                                 var index = point.Hops.IndexOf(tempP);
                                                 point.Hops[index] = new Hop(pItem.Destination, free + pItem.Value, item);
                                                 _tempPoints.Add(point);
@@ -232,7 +241,7 @@ namespace RIP
                                         }
                                         else
                                         {
-                                            point.Hops.Add(new Hop(pItem.Destination, free + pItem.Value, item)); //item
+                                            point.Hops.Add(new Hop(pItem.Destination, free + pItem.Value, item));
                                             _tempPoints.Add(point);
                                         }
                                     }
